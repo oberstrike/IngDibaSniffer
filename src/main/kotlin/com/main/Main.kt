@@ -8,13 +8,7 @@ import kotlinx.coroutines.*
 import tornadofx.launch
 
 fun main(args: Array<String>) {
-    MainContext.mainJob = GlobalScope.launch(Dispatchers.IO) {
-        val settler4Class = Settler4Class()
-        while (isActive){
-            delay(1000)
-            settler4Class.readProcess()
-        }
-    }
+
     launch<OverlayApp>()
 }
 

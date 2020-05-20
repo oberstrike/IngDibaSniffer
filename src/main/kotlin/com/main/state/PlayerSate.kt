@@ -4,8 +4,14 @@ import com.main.util.Entity
 
 object PlayerSate {
 
+    object ResourceState {
+        val wood = Entity(0xDAD97C)
+        val stone = Entity(0xDAAD5C)
+        var woodCounter = 0
+    }
+
     object Building {
-        var wood = Entity(0x017ED188)
+        var wood = Entity(0xDAD188)
         var sawmill = Entity(0x01B2F8D4)
         var stone = Entity(0x017ECF70)
         var medium = Entity(0x01B2FA04)

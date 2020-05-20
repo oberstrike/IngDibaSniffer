@@ -2,7 +2,6 @@ package com.main.game
 
 import com.main.state.GameState
 import com.main.state.PlayerSate
-import com.main.util.entity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.runBlocking
@@ -12,7 +11,9 @@ import org.jire.arrowhead.processByName
 import org.jire.arrowhead.windows.WindowsModule
 import java.util.logging.Logger
 
-class Settler4Class {
+class Settler4Class(private val onTimeChangedListener: OnTimeChangedListener,
+                    private val onGameIsOverListener: OnGameIsOverListener
+) {
 
     private val logger = Logger.getLogger(Settler4Class::class::simpleName.name)
 
@@ -29,39 +30,66 @@ class Settler4Class {
         isRunning = settlerExe != null
     }
 
-    fun readProcess() {
+    suspend fun readProcess() {
         with(settlerExe) {
             if (settlerExe != null) {
                 val process = this!!
                 process.loadModules()
-                val baseAddress = (process.modules["S4_Main.exe"] as WindowsModule).address
+                val module = process.modules["S4_Main.exe"]
 
-                runBlocking {
-                    withContext(Dispatchers.JavaFx){
-                        with(GameState) {
-                            time.setValue(process.int(baseAddress + time.offset))
-                        }
+                if (module == null) {
+                    settlerExe = null
+                    println("Game is closed")
+                    return@with
+                }
+
+                val baseAddress = module.address
+
+                val timeRaw = process.int(baseAddress + GameState.time.offset)
+                val oldTime = GameState.time
+
+                if (oldTime.value != 0 && timeRaw == 0) {
+                    onGameIsOverListener.onGameIsOver()
+                    GameState.time.value = 0
+                    GameState.isInGame = false
+                    return
+                }
+
+                GameState.time.value = (timeRaw / 14.1).toInt()
+                GameState.isInGame = timeRaw != 0
+
+
+                with(PlayerSate.ResourceState) {
+                    val newWoodValue = process.int(baseAddress + wood.offset)
+
+                    if (wood.value != 0) {
+                        val newWoodDiff = wood.value - newWoodValue
+                        woodCounter += newWoodDiff
+                    } else {
+                        woodCounter = 0
                     }
+
+                    wood.value = newWoodValue
+
+                    val newStoneValue = process.int(baseAddress + stone.offset)
+                    val newStoneDiff = stone.value - newStoneValue
+
+
                 }
 
-
-
-
-
-                with(PlayerSate.Settler) {
-                    sword.setValue(process.entity(sword))
-                    archery.setValue(process.entity(archery))
-                }
-
-                with(PlayerSate.Building) {
-                    wood.setValue(process.entity(wood))
-                    stone.setValue(process.entity(stone))
-                    sawmill.setValue(process.entity(sawmill))
-                }
+                onTimeChangedListener.onTimeChanged(GameState.time.value)
             } else {
                 settlerExe = processByName(processName)
             }
         }
     }
+}
+
+interface OnTimeChangedListener {
+    suspend fun onTimeChanged(time: Int)
+}
+
+interface OnGameIsOverListener {
+    suspend fun onGameIsOver()
 }
 
