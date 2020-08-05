@@ -17,4 +17,6 @@ object GameState {
         val playerSeven = Entity(0)
         val playerEight = Entity(0)
     }
+
+    val playerState = Entity(0x1065EFC)
 }

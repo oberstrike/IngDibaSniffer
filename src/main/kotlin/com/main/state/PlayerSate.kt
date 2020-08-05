@@ -5,9 +5,16 @@ import com.main.util.Entity
 object PlayerSate {
 
     object ResourceState {
-        val wood = Entity(0xDAD97C)
+        val planks = Entity(0xDAD97C)
+
         val stone = Entity(0xDAAD5C)
-        var woodCounter = 0
+        var usedPlanksCounter = 0
+        var usedStoneCounter = 0
+
+        val rawWoodAllTime = Entity(0xDADA68)
+        val rawWood = Entity(0xDAE02C)
+        var usedRawWood = 0
+
     }
 
     object Building {
@@ -19,6 +26,12 @@ object PlayerSate {
 
 
     object Settler {
+        val freeSettler = Entity(0xDAAD50)
+        val worker = Entity(0xDAAF08)
+        val planer = Entity(0xDAAEF8)
+
+        val numberOfFreeBeds = Entity(0xDAAD54)
+
         var archery = Entity(0x017EB05C)
         var sword = Entity(0x017EB054)
     }

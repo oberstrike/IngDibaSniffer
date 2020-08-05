@@ -13,9 +13,13 @@ class BasicView : View() {
 
     private val viewModel: BasicViewModel by inject()
 
+    companion object {
+
+    }
+
     init {
         primaryStage.isAlwaysOnTop = true
-        primaryStage.opacity = 0.4
+        primaryStage.opacity = 0.8
     }
 
     override fun onDock() {
@@ -26,7 +30,6 @@ class BasicView : View() {
     }
 
     override val root = gridpane {
-
         row {
             label(viewModel.timeProperty.stringBinding {
                 if (it != null) {
@@ -51,29 +54,54 @@ class BasicView : View() {
 
                 val listOfSeries = observableList<XYChart.Series<String, Number>>();
 
-                val property = SimpleObjectProperty<ObservableList<XYChart.Data<String, Number>>>()
-                property.value = observableList()
-                val x = XYChart.Data<String, Number>("", 2)
+                val firstSeriesProperty = SimpleObjectProperty<ObservableList<XYChart.Data<String, Number>>>()
+                firstSeriesProperty.value = observableList()
 
+                val secondSeriesProperty = SimpleObjectProperty<ObservableList<XYChart.Data<String, Number>>>()
+                secondSeriesProperty.value = observableList()
 
-                val series = series("Overview") {
-                    dataProperty().bind(property)
+                val firstSeries = series("Wood") {
+                    dataProperty().bind(firstSeriesProperty)
                 }
 
-                listOfSeries.add(series)
+                val secondSeries = series("Stone") {
+                    dataProperty().bind(secondSeriesProperty)
+                }
+
+                listOfSeries.add(firstSeries)
+                listOfSeries.add(secondSeries)
 
                 viewModel.firstSeriesDataList.addListener(
                         ListChangeListener {
                             val list = it.list
                             for (value in list) {
                                 val newPoint = XYChart.Data<String, Number>(value.first, value.second)
-                                property.value.add(newPoint)
+                                firstSeriesProperty.value.add(newPoint)
                             }
-
-
+                            if (list.isEmpty()) {
+                                firstSeriesProperty.value.clear()
+                            }
                         }
                 )
 
+                viewModel.secondSeriesDataList.addListener(
+                        ListChangeListener {
+                            val list = it.list
+                            for (value in list) {
+                                val newPoint = XYChart.Data<String, Number>(value.first, value.second)
+                                secondSeriesProperty.value.add(newPoint)
+                            }
+                            if (list.isEmpty()) {
+                                secondSeriesProperty.value.clear()
+                            }
+                        }
+                )
+
+
+                row {
+                    label("Hot Reload!")
+
+                }
 
                 data = listOfSeries
 

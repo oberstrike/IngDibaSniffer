@@ -2,18 +2,12 @@ package com.main.game
 
 import com.main.state.GameState
 import com.main.state.PlayerSate
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.javafx.JavaFx
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.jire.arrowhead.Process
+import org.jire.arrowhead.get
 import org.jire.arrowhead.processByName
-import org.jire.arrowhead.windows.WindowsModule
 import java.util.logging.Logger
 
-class Settler4Class(private val onTimeChangedListener: OnTimeChangedListener,
-                    private val onGameIsOverListener: OnGameIsOverListener
-) {
+class Settler4Class(private val settlerListener: SettlerListener) {
 
     private val logger = Logger.getLogger(Settler4Class::class::simpleName.name)
 
@@ -49,39 +43,70 @@ class Settler4Class(private val onTimeChangedListener: OnTimeChangedListener,
                 val oldTime = GameState.time
 
                 if (oldTime.value != 0 && timeRaw == 0) {
-                    onGameIsOverListener.onGameIsOver()
+                    settlerListener.onGameIsOver()
                     GameState.time.value = 0
                     GameState.isInGame = false
                     return
                 }
 
                 GameState.time.value = (timeRaw / 14.1).toInt()
-                GameState.isInGame = timeRaw != 0
+                val isInGame = (timeRaw != 0)
 
+                val newGameIsStarted = GameState.isInGame != isInGame
+                GameState.isInGame = isInGame
+
+                if (newGameIsStarted) settlerListener.onGameIsStarted()
 
                 with(PlayerSate.ResourceState) {
-                    val newWoodValue = process.int(baseAddress + wood.offset)
-
-                    if (wood.value != 0) {
-                        val newWoodDiff = wood.value - newWoodValue
-                        woodCounter += newWoodDiff
-                    } else {
-                        woodCounter = 0
-                    }
-
-                    wood.value = newWoodValue
-
-                    val newStoneValue = process.int(baseAddress + stone.offset)
-                    val newStoneDiff = stone.value - newStoneValue
-
-
+                    extractResource(process, baseAddress, newGameIsStarted)
                 }
 
-                onTimeChangedListener.onTimeChanged(GameState.time.value)
+                with(PlayerSate.Settler) {
+                    extractResource(process, baseAddress, newGameIsStarted)
+                }
+
+                settlerListener.onTimeChanged(GameState.time.value)
             } else {
                 settlerExe = processByName(processName)
             }
         }
+    }
+
+    private fun PlayerSate.Settler.extractResource(process: Process, baseAddress: Long, newGameIsStarted: Boolean) {
+        val newFreeSettlerValue = process.int(baseAddress + freeSettler.offset)
+        val newWorkerValue = process.int(baseAddress + worker.offset)
+        val newPlanerValue = process.int(baseAddress + planer.offset)
+        val newNumberOfFreeBeds = process.int(baseAddress + numberOfFreeBeds.offset)
+
+        freeSettler.value = newFreeSettlerValue
+        worker.value = newWorkerValue
+        planer.value = newPlanerValue
+        numberOfFreeBeds.value = newNumberOfFreeBeds
+
+    }
+
+
+    private fun PlayerSate.ResourceState.extractResource(process: Process, baseAddress: Long, newGameIsStarted: Boolean) {
+        val newPlanksValue = process.int(baseAddress + planks.offset)
+        val newStoneValue = process.int(baseAddress + stone.offset)
+        val newRawWoodValue = process.int(baseAddress + rawWood.offset)
+        val newRawWoodAllTimeValue = process.int(baseAddress + rawWoodAllTime.offset)
+
+        if (newGameIsStarted) {
+            usedPlanksCounter = 0
+            usedStoneCounter = 0
+            usedRawWood = 0
+        } else {
+            usedPlanksCounter += planks.value - newPlanksValue
+            usedStoneCounter += stone.value - newStoneValue
+            usedRawWood += rawWood.value - newRawWoodValue
+        }
+
+
+        planks.value = newPlanksValue
+        stone.value = newStoneValue
+        rawWoodAllTime.value = newRawWoodAllTimeValue
+        rawWood.value = newRawWoodValue
     }
 }
 
@@ -93,3 +118,8 @@ interface OnGameIsOverListener {
     suspend fun onGameIsOver()
 }
 
+interface OnGameIsStartedListener {
+    suspend fun onGameIsStarted()
+}
+
+interface SettlerListener : OnTimeChangedListener, OnGameIsOverListener, OnGameIsStartedListener
