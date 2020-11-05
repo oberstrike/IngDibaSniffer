@@ -8,3 +8,4 @@
  */
 
 rootProject.name = "settlerManager"
+include("::module")
