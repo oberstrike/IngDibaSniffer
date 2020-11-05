@@ -1,5 +1,9 @@
 package com.main
 
+import io.kesselring.sukejura.pattern.DaysOfWeek
+import io.kesselring.sukejura.pattern.Hours
+import io.kesselring.sukejura.pattern.Minutes
+import io.kesselring.sukejura.sukejura
 import org.openqa.selenium.By
 import org.openqa.selenium.JavascriptExecutor
 import org.openqa.selenium.chrome.ChromeDriver
@@ -115,18 +119,36 @@ class Sniffer {
 
 fun main(args: Array<String>) {
     log("Welcome from DIBA-Sniffing-Tool")
+    val sniffer = Sniffer()
 
-    try {
-        val sniffer = Sniffer()
-        log("Starting the sniffer...")
-        sniffer.start()
-        log("Finished Sniffing")
-
-    } catch (exception: Exception) {
-        log("There was an error while sniffing:")
-        exception.printStackTrace()
+    val sukejura = sukejura {
+        schedule {
+            daysOfWeek {
+                listOf(
+                        DaysOfWeek.Mon,
+                        DaysOfWeek.Tue,
+                        DaysOfWeek.Wed,
+                        DaysOfWeek.Thu,
+                        DaysOfWeek.Fri
+                )
+            }
+            hour { Hours.H(12) }
+            minute { Minutes.M(0) }
+            task {
+                log("Starting the sniffer...")
+                sniffer.start()
+                log("Finished Sniffing")
+                invocations().first().apply {
+                    log("Next Start: ${this.toString()}")
+                }
+            }
+        }
+        start()
     }
-    log("I'm done, see you soon.")
+    sukejura.schedules.first().invocations().take(1).forEach {
+        println("First start at: $it")
+    }
+
 }
 
 
