@@ -25,15 +25,27 @@ fun log(message: String) {
 
 class Sniffer {
     private val isWindows = System.getProperty("os.name").contains("Windows")
-    private val path = if (isWindows) "C:\\Users\\oberstrike\\Desktop\\Test" else "/data/csv"
+    private val path = if (isWindows) "C:\\Users\\oberstrike\\Desktop\\Depot" else "/data/csv"
 
-
-    private val databaseReader = DatabaseReader(
-            FileInputStream(File(path + File.separator + "BankingDatabase.kdbx")),
-            System.getenv("DATABASEPASSWORD")
-    )
+    private var databaseReader: DatabaseReader
 
     private val ingDibaUrl = "https://www.ing.de/"
+
+    init {
+        log("Path: ${path + File.separator + "BankingDatabase.kdbx"}")
+        log("Linux: ${!isWindows}")
+
+        val files = File(path).list() ?: throw NullPointerException()
+        log(files.contentDeepToString())
+
+        databaseReader = DatabaseReader(
+                File(path + File.separator + "banking.csv"),
+                System.getenv("DATABASEPASSWORD")
+        )
+        log("Database loaded")
+
+    }
+
 
     fun start() {
         val (kontonummer, pin, zugangsnummer, key) = databaseReader.getCredentials()
@@ -120,6 +132,9 @@ class Sniffer {
 fun main(args: Array<String>) {
     log("Welcome from DIBA-Sniffing-Tool")
     val sniffer = Sniffer()
+    log("Sniffer was started successfully")
+    sniffer.start()
+
 
     val sukejura = sukejura {
         schedule {

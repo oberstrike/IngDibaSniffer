@@ -1,45 +1,28 @@
 package com.main
 
-import org.linguafranca.pwdb.kdbx.KdbxCreds
-import org.linguafranca.pwdb.kdbx.dom.DomDatabaseWrapper
-import java.io.InputStream
+import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+import java.io.File
 
-class DatabaseReader(dataBaseInputStream: InputStream,
-                     databasePassword: String) {
+class DatabaseReader(private val databaseFile: File,
+                     private val databasePassword: String) {
 
-    private val credentials = KdbxCreds(databasePassword.toByteArray())
-
-
-    private val database: DomDatabaseWrapper = DomDatabaseWrapper.load(credentials, dataBaseInputStream)
 
     fun getCredentials(): Credentials {
-        val visitor = TestVisitor()
-        database.visit(visitor)
-        return visitor.credentials
-    }
-
-}
-
-
-data class Credentials(
-        var kontonummer: String = "",
-        var pin: String = "",
-        var zugangsnummer: String = "",
-        var key: String = ""
-) {
-    class Builder {
-        private val credentials: Credentials = Credentials()
-
-        fun kontonummer(kontonummer: String) = apply { credentials.kontonummer = kontonummer }
-
-        fun pin(pin: String) = apply { credentials.pin = pin }
-
-        fun zugangsnummer(zugangsnummer: String) = apply { credentials.zugangsnummer = zugangsnummer }
-
-        fun key(key: String) = apply { credentials.key = key }
-
-        fun build() = credentials
+        val lines = databaseFile.readLines()
+        val firstLine = lines[0]
+        val decrypt = ChCrypto.aesDecrypt(firstLine, databasePassword)
+        val content = csvReader {
+            delimiter = ';'
+        }.readAll(decrypt).first()
+        return Credentials(
+                zugangsnummer = content[0],
+                pin = content[1],
+                kontonummer = content[3],
+                key = content[2]
+        )
 
     }
 
 }
+
+
